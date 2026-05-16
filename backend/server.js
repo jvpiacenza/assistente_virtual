@@ -5,7 +5,7 @@
 // ============================================================
 
 const express = require('express');
-const cors    = require('cors');
+const cors = require('cors');
 
 const app = express();
 app.use(cors());
@@ -15,11 +15,11 @@ app.use(express.json());
 //  CONFIGURAÇÕES
 // ─────────────────────────────────────────────
 
-const OLLAMA_URL  = 'http://localhost:11434/api/chat';
-const MODEL       = 'llama3';
+const OLLAMA_URL = 'http://localhost:11434/api/chat';
+const MODEL = 'llama3';
 const MAX_HISTORY = 10;   // máximo de pares user/assistant mantidos por sessão
-const MAX_TOKENS     = 400; // num_predict enviado ao Ollama
-const SUMMARY_TURNS  = 4;   // quantas trocas recentes entram no resumo do histórico
+const MAX_TOKENS = 400; // num_predict enviado ao Ollama
+const SUMMARY_TURNS = 4;   // quantas trocas recentes entram no resumo do histórico
 
 // ─────────────────────────────────────────────
 //  ARMAZENAMENTO DE HISTÓRICO (em memória)
@@ -133,114 +133,7 @@ function extractContextFromHistory(history) {
 //  Cada entrada possui: keywords (para busca) e content (contexto injetado)
 // ─────────────────────────────────────────────
 
-const knowledgeBase = [
-    {
-        keywords: ['barulho', 'ruído', 'ronco', 'estralo', 'zumbido', 'bate', 'vibra', 'rangido'],
-        content: `
-[CONHECIMENTO TÉCNICO — Barulhos e Ruídos]
-- Ronco constante: normal do compressor em operação, mas volume excessivo pode indicar compressor desgastado ou suporte solto.
-- Estalos esporádicos: dilatação térmica das paredes plásticas — normal.
-- Barulho de água/borbulhamento: circulação do gás refrigerante — normal.
-- Vibração forte: verifique se a geladeira está nivelada (pés reguláveis); objetos em cima podem amplificar vibração.
-- Zumbido alto: possível ventilador sujo ou com pá quebrada; ventilador do condensador com acúmulo de poeira.
-- Solução geral: verificar nível, limpar condensador, verificar ventilador e suportes do compressor.`
-    },
-    {
-        keywords: ['não gela', 'não está gelando', 'quente', 'temperatura', 'frio', 'calor', 'morno'],
-        content: `
-[CONHECIMENTO TÉCNICO — Problemas de Temperatura / Não Gela]
-- Termostato defeituoso: não aciona o compressor na temperatura correta.
-- Gás refrigerante baixo (falta de gás): necessita recarga por técnico habilitado.
-- Compressor com defeito: não pressuriza o gás; exige substituição.
-- Borracha de vedação (gaxeta) gasta: ar quente entra, prejudicando o resfriamento.
-- Condensador sujo: dissipação de calor prejudicada; limpe as grades traseiras com escova.
-- Ventilador interno parado: ar frio não circula; verifique o ventilador do evaporador.
-- Geladeira muito cheia ou mal organizada: bloqueia a circulação de ar.
-- Temperatura ajustada errada: verifique se o termostato está na posição correta (geralmente 3–4 de 5).`
-    },
-    {
-        keywords: ['vazamento', 'água', 'água no chão', 'acumulo de água', 'poça', 'gotejando', 'pingando'],
-        content: `
-[CONHECIMENTO TÉCNICO — Vazamento de Água]
-- Dreno do degelo entupido: o orifício de escoamento da água do degelo fica no fundo do compartimento; limpe com palito ou seringa com água morna.
-- Bandeja de evaporação transbordando: evaporação insuficiente por causa de temperatura ambiente alta ou ventilação ruim na traseira.
-- Gaxeta (borracha) danificada: condensação excessiva por entrada de ar úmido.
-- Mangueira de degelo desconectada ou rachada: reposição simples.
-- Porta mal fechada: verifique se há objetos impedindo o fechamento completo.
-- Geladeira fora de nível: água do degelo não escoa corretamente; ajuste os pés.`
-    },
-    {
-        keywords: ['gelo', 'congela', 'congelando tudo', 'excesso de gelo', 'gelo demais', 'freezer', 'degelo'],
-        content: `
-[CONHECIMENTO TÉCNICO — Excesso de Gelo / Congelamento]
-- Termostato muito alto: regule para posição intermediária.
-- Sistema de degelo automático com defeito: temporizador, resistência de degelo ou termostato de degelo podem estar falhos.
-- Gaxeta com folga: ar úmido entra e forma gelo excessivo no evaporador.
-- Porta aberta com frequência: excesso de umidade.
-- Geladeira Frost Free: se acumula gelo, o sistema de degelo automático pode ter parado — exige verificação da resistência e timer de degelo.`
-    },
-    {
-        keywords: ['energia', 'conta de luz', 'consumo', 'elétrico', 'gasto', 'kw', 'kwh', 'eficiência'],
-        content: `
-[CONHECIMENTO TÉCNICO — Consumo de Energia]
-- Condensador sujo: compressor trabalha mais para dissipar calor; limpe as grades regularmente.
-- Borracha de vedação gasta: ar quente entra e o compressor compensa, aumentando o consumo.
-- Abertura excessiva de portas: cada abertura introduz ar quente.
-- Alimentos quentes inseridos: evite colocar alimentos quentes; deixe esfriar antes.
-- Local de instalação: evite próximo ao fogão, forno ou sol direto; mantenha 15 cm de afastamento da parede.
-- Compressor velho ou desgastado: consome mais energia do que o necessário.
-- Etiqueta Procel: geladeiras antigas (>10 anos) consomem até 3× mais que modelos atuais classe A.`
-    },
-    {
-        keywords: ['cheiro', 'odor', 'fedor', 'mau cheiro', 'cheiro ruim', 'fedendo'],
-        content: `
-[CONHECIMENTO TÉCNICO — Odores na Geladeira]
-- Alimentos estragados: retire e descarte; limpe internamente com água e bicarbonato de sódio.
-- Borracha da porta com mofo: limpe com esponja e solução de água + vinagre branco.
-- Dreno de degelo com resíduos: pode acumular bactérias; limpe o dreno e a bandeja.
-- Carvão ativado: coloque um recipiente com bicarbonato ou carvão ativado para absorver odores.
-- Alimentos sem tampa: sempre tampe ou embale os alimentos armazenados.`
-    },
-    {
-        keywords: ['não liga', 'não funciona', 'desligou', 'apagou', 'sem energia', 'travada', 'parou'],
-        content: `
-[CONHECIMENTO TÉCNICO — Geladeira Não Liga]
-- Verifique a tomada: teste outro aparelho na mesma tomada; verifique o disjuntor.
-- Cabo de alimentação: inspecione visualmente por cortes ou danos.
-- Protetor térmico do compressor: pode ter desarmado por superaquecimento; aguarde 30 min e tente novamente.
-- Termostato em posição OFF: alguns modelos têm posição de desligamento total.
-- Placa eletrônica com defeito (em modelos mais modernos): requer diagnóstico técnico.
-- Compressor queimado: sem o ruído característico ao ligar pode indicar compressor inativo.`
-    },
-    {
-        keywords: ['porta', 'borracha', 'gaxeta', 'vedação', 'fecha', 'abre', 'ímã'],
-        content: `
-[CONHECIMENTO TÉCNICO — Porta e Vedação (Gaxeta)]
-- Teste da gaxeta: coloque uma folha de papel na porta ao fechar; se sair facilmente, a vedação está comprometida.
-- Limpeza: limpe com pano úmido e detergente neutro; evite produtos abrasivos.
-- Deformação: gaxetas deformadas podem ser reativadas com secador de cabelo (calor leve) para recuperar flexibilidade.
-- Substituição: gaxetas são peças acessíveis e trocadas sem necessidade de técnico na maioria dos modelos.
-- Porta desalinhada: ajuste as dobradiças; muitos modelos permitem ajuste simples com chave de fenda.`
-    },
-    {
-        keywords: ['luz', 'lâmpada', 'iluminação', 'led', 'apagou luz', 'luz não acende'],
-        content: `
-[CONHECIMENTO TÉCNICO — Luz Interna]
-- Lâmpada queimada: substitua por lâmpada compatível (LED ou incandescente conforme o modelo).
-- Interruptor de porta com defeito: pequeno botão na lateral interna que aciona a luz — pode estar preso ou defeituoso.
-- Problema no chicote elétrico interno: menos comum; requer técnico.`
-    },
-    {
-        keywords: ['compressor', 'motor', 'liga desliga', 'ciclo', 'aquece atrás'],
-        content: `
-[CONHECIMENTO TÉCNICO — Compressor]
-- Calor na traseira: normal — o condensador dissipa calor; porém calor excessivo indica condensador sujo ou ventilação insuficiente.
-- Liga e desliga muito rápido (curto-ciclo): protetor térmico atuando por superaquecimento, ou gás baixo.
-- Compressor não para nunca: termostato defeituoso, ou gás baixo fazendo o sistema trabalhar continuamente.
-- Ruído metálico no compressor: desgaste interno — avalie substituição.
-- Vida útil média: 10–15 anos; após esse período, falhas são mais frequentes.`
-    }
-];
+
 
 /**
  * Busca entradas relevantes na base de conhecimento.
@@ -249,34 +142,32 @@ const knowledgeBase = [
  * @param {string} userMessage - mensagem atual do usuário
  * @param {Array}  history     - histórico completo da sessão
  */
-function searchKnowledgeBase(userMessage, history = []) {
-    // Combina mensagem atual + palavras-chave do histórico recente para a busca
+// Nova função que se comunica com o seu microserviço Python (RAG Semântico)
+async function searchKnowledgeBase(userMessage, history = []) {
+    // Junta a mensagem atual com o contexto histórico (mesma lógica sua)
     const historyContext = extractContextFromHistory(history);
-    const searchText = (userMessage + ' ' + historyContext).toLowerCase();
+    const searchText = (userMessage + ' ' + historyContext).trim();
 
-    const matched = [];
+    try {
+        // Dispara a busca para o seu Flask em Python na porta 5001
+        const response = await fetch('http://localhost:5001/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: searchText, top_k: 1 })
+        });
 
-    for (const entry of knowledgeBase) {
-        const hits = entry.keywords.filter(kw => searchText.includes(kw));
-        if (hits.length > 0) {
-            // Peso extra se a keyword bate especificamente na mensagem atual
-            const currentHits = entry.keywords.filter(
-                kw => userMessage.toLowerCase().includes(kw)
-            ).length;
-            matched.push({ entry, score: hits.length + currentHits * 2 });
+        const data = await response.json();
+
+        // Se encontrou resultados no Python, junta os textos e retorna
+        if (data.found && data.results.length > 0) {
+            return data.results.map(r => r.chunk).join('\n\n');
         }
+        return null;
+
+    } catch (error) {
+        console.error('[ERRO RAG] Falha ao contatar microserviço Python na porta 5001:', error.message);
+        return null;
     }
-
-    if (matched.length === 0) return null;
-
-    // Ordena pela pontuação (mais relevante primeiro)
-    matched.sort((a, b) => b.score - a.score);
-
-    // Retorna no máximo 2 entradas mais relevantes para não sobrecarregar o contexto
-    return matched
-        .slice(0, 2)
-        .map(m => m.entry.content)
-        .join('\n');
 }
 
 // ─────────────────────────────────────────────
@@ -303,11 +194,14 @@ Seu papel é diagnosticar problemas em geladeiras e orientar clientes de forma t
 REGRAS DE COMPORTAMENTO:
 - Responda SEMPRE em português brasileiro.
 - Seja técnico, mas use linguagem acessível ao cliente comum.
-- Estruture sua resposta com: (1) possível causa, (2) solução sugerida, (3) orientação prática.
+- Estruture sua resposta curta com: possível causa, solução sugerida, orientação prática.
 - Se o problema exigir técnico especializado, informe isso claramente.
 - Não invente informações; se não souber, oriente o cliente a buscar suporte presencial.
-- Respostas entre 80 e 200 palavras — nem curtas demais, nem excessivamente longas.
+- Respostas entre 30 a 50 palavras
 - Não use markdown pesado (sem ###, **, __). Use listas simples com hífen quando necessário.
+- Foque EXCLUSIVAMENTE no sintoma técnico relatado.
+- IGNORE informações pessoais irrelevantes antes de resolver o problema informado (como endereço, nome da rua, cidade, etc).
+- NUNCA invente sintomas que o cliente não relatou (ex: não fale de conta de luz se o cliente não mencionou energia).
 
 REGRAS SOBRE MEMÓRIA E CONTEXTO:
 - Você TEM ACESSO ao histórico completo da conversa (listado abaixo quando disponível).
@@ -371,7 +265,7 @@ async function callOllama(systemPrompt, history) {
             stream: false,
             options: {
                 num_predict: MAX_TOKENS,
-                temperature: 0.65,
+                temperature: 0.5,
                 top_p: 0.9,
                 repeat_penalty: 1.1
             }
@@ -402,7 +296,7 @@ async function callOllama(systemPrompt, history) {
  */
 app.post('/chat', async (req, res) => {
     const userMessage = req.body.message?.trim();
-    const sessionId   = req.body.sessionId || 'default';
+    const sessionId = req.body.sessionId || 'default';
 
     if (!userMessage) {
         return res.status(400).json({ error: 'Campo "message" é obrigatório.' });
@@ -419,7 +313,12 @@ app.post('/chat', async (req, res) => {
         // 3. Busca RAG combinando mensagem atual + contexto do histórico
         //    (resolve "e aquele barulho?" sem a palavra no input atual)
         //    Se for pergunta de memória, RAG não é necessário
-        const ragContext = isMemory ? null : searchKnowledgeBase(userMessage, historyBefore);
+
+        const ragContext = isMemory ? null : await searchKnowledgeBase(userMessage, historyBefore);
+
+        console.log("\n[DEBUG RAG] Texto que o Python enviou para o Ollama:");
+        console.log(ragContext);
+        console.log("--------------------------------------------------\n");
 
         // 4. Gera resumo legível do histórico recente para injetar no system prompt
         //    Isso é o que garante que "qual era o problema?" funcione corretamente
@@ -474,6 +373,70 @@ app.post('/chat/reset', (req, res) => {
  */
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', model: MODEL, sessions: Object.keys(conversationStore).length });
+});
+
+const { SessionsClient } = require('@google-cloud/dialogflow');
+const axios = require('axios');
+
+// Configure com o arquivo de credenciais baixado
+const dialogflowClient = new SessionsClient({
+    keyFilename: './credentials.json'
+});
+
+app.post('/dialogflow', async (req, res) => {
+    try {
+        const body = req.body;
+        const userMessage = body.queryResult.queryText;
+        const session = body.session; // ex: "projects/gelatech/agent/sessions/123"
+
+        // 🟢 Resposta imediata ao Dialogflow (evita timeout)
+        // Resposta imediata VAZIA para que o Dialogflow mostre a resposta padrão da intent
+        res.json({
+            fulfillmentText: '⏳ Estou analisando seu problema... um momento.',
+            fulfillmentMessages: [
+                { text: { text: ['⏳ Estou analisando seu problema... um momento.'] } }
+            ],
+            source: 'GelaTech-Backend'
+        });
+
+        // ⚙️ Processamento assíncrono da resposta real
+        console.log(`[Dialogflow Async] Processando: "${userMessage}"`);
+        const sessionId = session.split('/').pop();
+
+        const historyBefore = [...getHistory(sessionId)];
+        const isMemory = isMemoryQuestion(userMessage);
+        const ragContext = isMemory ? null : await searchKnowledgeBase(userMessage, historyBefore);
+        const conversationSummary = buildConversationSummary(historyBefore);
+        const systemPrompt = buildSystemPrompt(ragContext, conversationSummary, isMemory);
+        addToHistory(sessionId, 'user', userMessage);
+        const history = getHistory(sessionId);
+        const botReply = await callOllama(systemPrompt, history);
+        addToHistory(sessionId, 'assistant', botReply);
+
+        const eventRequest = {
+            session: session,
+            queryInput: {
+                event: {
+                    name: 'assistente_resposta',
+                    parameters: {
+                        resposta: botReply
+                    },
+                    languageCode: 'pt-br'   // ← agora DENTRO do evento
+                }
+            }
+        };
+
+        console.log('[Dialogflow] Payload do evento:', JSON.stringify(eventRequest, null, 2));
+        
+        console.log('[Dialogflow] Enviando evento com resposta:', botReply?.substring(0, 80));
+        const [eventResponse] = await dialogflowClient.detectIntent(eventRequest);
+        console.log('[Dialogflow] Evento response queryResult:', 
+          JSON.stringify(eventResponse.queryResult.fulfillmentText));
+
+    } catch (error) {
+        console.error('[Dialogflow Error]', error.message);
+        // A resposta inicial já foi enviada com sucesso
+    }
 });
 
 // ─────────────────────────────────────────────

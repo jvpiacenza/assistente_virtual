@@ -156,4 +156,13 @@ compressor exigem técnico — substituição pode ser necessária.""",
 - NUNCA use secador de cabelo diretamente no evaporador — risco de choque elétrico.
 - Ao terminar, seque bem o interior e o dreno antes de religar.
 - Espere 15 minutos após religar antes de colocar os alimentos de volta.""",
+
+# ── Gelando Demais / Congelando Alimentos ─────────────────────────────
+    """Problema: Geladeira gelando demais, congelando alimentos na parte de baixo (refrigerador).
+Causas possíveis:
+- Termostato regulado para uma temperatura muito baixa (fria).
+- Sensor de temperatura com defeito ou fora da posição.
+- Damper (porta que controla a passagem de ar frio do freezer para a geladeira) travado aberto.
+Solução: Reduza a regulagem de temperatura no painel. Se não resolver, o sensor ou o damper precisam ser testados por um técnico."""
 ]
+

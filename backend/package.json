@@ -10,6 +10,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-cloud/dialogflow": "^7.6.1",
+    "axios": "^1.16.0",
     "cors": "^2.8.6",
     "express": "^5.2.1"
   },
